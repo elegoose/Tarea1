@@ -34,6 +34,8 @@ if __name__ == '__main__':
     # Estableciendo color de pantalla
     glClearColor(0.85, 0.85, 0.85, 1.0)
 
+     #Hello Github!!
+
     # Estableciendo pipelines
     backgroundPipeline = es.SimpleTextureTransformShaderProgram()
     bodiesPipeline = es.SimpleTransformShaderProgram()
