@@ -2,7 +2,7 @@ import numpy as np
 import basic_shapes as bs
 
 
-def createCircle(N, r, g, b):
+def createCircle(N, r, g, b,radius):
     vertices = [0, 0, 0, r, g, b]  # Primer vertice
     indices = []
 
@@ -13,7 +13,7 @@ def createCircle(N, r, g, b):
 
         vertices += [
             # vertex coordinates
-            0.5 * np.cos(theta), 0.5 * np.sin(theta), 0,
+            radius * np.cos(theta), radius * np.sin(theta), 0,
             r, g, b]
 
         # Se crean triángulos respecto al centro para rellenar la circunferencia
