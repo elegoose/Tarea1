@@ -10,11 +10,15 @@ import easy_shaders as es
 import json
 
 
+class Controller:
+    def __init__(self):
+        self.theta = 0.0
+        self.mousePos = (0.0, 0.0)
+
+
 def on_key(window, key, scancode, action, mods):
     if action != glfw.PRESS:
         return
-    elif key == glfw.KEY_ESCAPE:
-        glfw.set_window_should_close(window, True)
 
 
 if __name__ == '__main__':
@@ -37,7 +41,7 @@ if __name__ == '__main__':
     # Estableciendo pipelines
     backgroundPipeline = es.SimpleTextureTransformShaderProgram()
     bodiesPipeline = es.SimpleTransformShaderProgram()
-
+    viewPipeline = es.SimpleShaderProgram()
     gpuBG = es.toGPUShape(bs.createTextureQuad('skybox.jpg'), GL_REPEAT, GL_NEAREST)
 
     # Obteniendo información de bodies.json
@@ -103,6 +107,10 @@ if __name__ == '__main__':
                 system.childs += [sceneSatellite]
             planeta['systemSceneGraph'] = system
     t0 = glfw.get_time()
+    cam_theta = 0
+    camX = 0
+    camY = 0
+    zoom = 1
     while not glfw.window_should_close(window):
         glfw.poll_events()  # Se buscan eventos de entrada, mouse, teclado
 
@@ -110,6 +118,24 @@ if __name__ == '__main__':
         t1 = glfw.get_time()
         dt = t1 - t0
         t0 = t1
+
+        if glfw.get_key(window, glfw.KEY_A) == glfw.PRESS:
+            camX += 0.5 * dt
+
+        if glfw.get_key(window, glfw.KEY_D) == glfw.PRESS:
+            camX -= 0.5 * dt
+
+        if glfw.get_key(window, glfw.KEY_W) == glfw.PRESS:
+            camY += 0.5 * dt
+
+        if glfw.get_key(window, glfw.KEY_S) == glfw.PRESS:
+            camY -= 0.5 * dt
+
+        if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
+            zoom -= 0.5 * dt
+
+        if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
+            zoom += 0.5 * dt
 
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT)
@@ -123,7 +149,7 @@ if __name__ == '__main__':
 
         glUseProgram(bodiesPipeline.shaderProgram)
         glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
-                           tr.identity())
+                           tr.uniformScale(zoom))
         bodiesPipeline.drawShape(gpuStar)
 
         for planeta in planetas:
@@ -133,26 +159,28 @@ if __name__ == '__main__':
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glUseProgram(bodiesPipeline.shaderProgram)
             glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
-                               tr.identity())
+                               tr.uniformScale(zoom))
             bodiesPipeline.drawShape(planeta['gpuTrail'])
             if planeta['Satellites'] != 'Null':
                 for satelite in planeta['Satellites']:
                     satelite['angulo'] += satelite['Velocity'] * dt
                     satelite['posx'] = -np.cos(satelite['angulo']) * satelite['Distance']
                     satelite['posy'] = -np.sin(satelite['angulo']) * satelite['Distance']
-                    satelite['systemTrailSceneGraph'].transform = tr.translate(planeta['posx'], planeta['posy'], 0)
+                    satelite['systemTrailSceneGraph'].transform = tr.matmul(
+                        [tr.translate(planeta['posx'] * zoom, planeta['posy'] * zoom, 0), tr.uniformScale(zoom)])
                     sg.drawSceneGraphNode(satelite['systemTrailSceneGraph'], bodiesPipeline, 'transform')
 
                     satelite['sceneGraph'].transform = tr.translate(satelite['posx'], satelite['posy'], 0)
-
-                planeta['systemSceneGraph'].transform = tr.translate(planeta['posx'], planeta['posy'], 0)
+                planeta['systemSceneGraph'].transform = tr.matmul(
+                    [tr.translate(planeta['posx'] * zoom, planeta['posy'] * zoom, 0), tr.uniformScale(zoom)])
 
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                 sg.drawSceneGraphNode(planeta['systemSceneGraph'], bodiesPipeline, 'transform')
             else:
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                 glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
-                                   tr.translate(planeta['posx'], planeta['posy'], 0))
+                                   tr.matmul([tr.translate(planeta['posx'] * zoom, planeta['posy'] * zoom, 0),
+                                              tr.uniformScale(zoom)]))
                 bodiesPipeline.drawShape(planeta['GPUShape'])
         glfw.swap_buffers(window)
 
