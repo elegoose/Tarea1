@@ -61,6 +61,8 @@ if __name__ == '__main__':
         b = planeta['Color'][2]
         planeta['Radius'] *= proportion
         planeta['Distance'] *= proportion
+        planeta['posx'] = 0
+        planeta['posy'] = 0
         gpuPlaneta = es.toGPUShape(my.createCircle(15, r, g, b, planeta['Radius']))
         planeta['GPUShape'] = gpuPlaneta
 
@@ -118,12 +120,11 @@ if __name__ == '__main__':
         t1 = glfw.get_time()
         dt = t1 - t0
         t0 = t1
-
         if glfw.get_key(window, glfw.KEY_A) == glfw.PRESS:
-            camX += 0.5 * dt
+            camX -= 0.5 * dt
 
         if glfw.get_key(window, glfw.KEY_D) == glfw.PRESS:
-            camX -= 0.5 * dt
+            camX += 0.5 * dt
 
         if glfw.get_key(window, glfw.KEY_W) == glfw.PRESS:
             camY += 0.5 * dt
@@ -149,17 +150,17 @@ if __name__ == '__main__':
 
         glUseProgram(bodiesPipeline.shaderProgram)
         glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
-                           tr.uniformScale(zoom))
+                           tr.matmul([tr.translate(camX * zoom, camY * zoom, 0), tr.uniformScale(zoom)]))
         bodiesPipeline.drawShape(gpuStar)
 
         for planeta in planetas:
             planeta['angulo'] += planeta['Velocity'] * dt
-            planeta['posx'] = planeta['Distance'] * np.cos(planeta['angulo'])
-            planeta['posy'] = planeta['Distance'] * np.sin(planeta['angulo'])
+            planeta['posx'] = (planeta['Distance'] * np.cos(planeta['angulo'])) + camX
+            planeta['posy'] = (planeta['Distance'] * np.sin(planeta['angulo'])) + camY
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glUseProgram(bodiesPipeline.shaderProgram)
             glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
-                               tr.uniformScale(zoom))
+                               tr.matmul([tr.translate(camX * zoom, camY * zoom, 0), tr.uniformScale(zoom)]))
             bodiesPipeline.drawShape(planeta['gpuTrail'])
             if planeta['Satellites'] != 'Null':
                 for satelite in planeta['Satellites']:
