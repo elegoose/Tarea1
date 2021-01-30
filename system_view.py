@@ -31,19 +31,26 @@ def on_key(window, key, scancode, action, mods):
         controller.statement = not controller.statement
 
     elif key == glfw.KEY_LEFT:
+        print("KEY LEFT")
+        print("----------")
         if controller.bodyID < 0:
-            controller.bodyID = 0
+            controller.bodyID = controller.maxBodyID
         elif controller.bodyID > controller.maxBodyID:
             controller.bodyID = 0
         else:
             controller.bodyID -= 1
+        print("----------")
+        print(controller.bodyID)
     elif key == glfw.KEY_RIGHT:
+        print("KEY RIGHT")
         if controller.bodyID < 0:
-            controller.bodyID = 0
-        elif controller.bodyID > controller.maxBodyID:
+            controller.bodyID = controller.maxBodyID
+        elif controller.bodyID > controller.maxBodyID or controller.bodyID==-1:
             controller.bodyID = 0
         else:
             controller.bodyID += 1
+        print(controller.bodyID)
+        print("----------")
     elif key == glfw.KEY_ESCAPE:
         sys.exit()
 
@@ -102,6 +109,7 @@ if __name__ == '__main__':
         gpuPlanetTrail = es.toGPUShape(my.createTrail(planeta['Distance'], 25))
         planeta['gpuTrail'] = gpuPlanetTrail
         planeta['bodyID'] = bodyID
+        bodyID += 1
         gpuSelect = es.toGPUShape(my.createCircle(15,1,1,1,planeta['Radius']*1.1))
         planeta['gpuSelect'] = gpuSelect
 
@@ -119,8 +127,8 @@ if __name__ == '__main__':
             system = sg.SceneGraphNode('system')
             system.childs += [scenePlanet,sceneSelectPlanet]
             for satelite in planeta['Satellites']:
-                bodyID += 1
                 satelite['bodyID'] = bodyID
+                bodyID += 1
 
                 satelite['angulo'] = np.random.uniform(-1, 1) * np.pi * 2
                 # Almacenando figuras en memoria GPU
@@ -161,7 +169,6 @@ if __name__ == '__main__':
 
                 system.childs += [sceneSatellite,sceneSelectSatellite]
             planeta['systemSceneGraph'] = system
-        bodyID += 1
     controller.maxBodyID = bodyID
     t0 = glfw.get_time()
     cam_theta = 0
