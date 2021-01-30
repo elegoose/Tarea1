@@ -15,6 +15,7 @@ class Controller:
         self.bodyID = -1
         self.maxBodyID = 1
 
+
 controller = Controller()
 
 
@@ -28,35 +29,22 @@ def on_key(window, key, scancode, action, mods):
         pass
 
     elif key == glfw.KEY_LEFT:
-        print("KEY LEFT")
-        print("----------")
-        if controller.bodyID < 0:
-            controller.bodyID = controller.maxBodyID
-        elif controller.bodyID > controller.maxBodyID:
-            controller.bodyID = 0
+        if controller.bodyID >= controller.maxBodyID or controller.bodyID == -1:
+            controller.bodyID = controller.maxBodyID - 1
+        elif controller.bodyID < 0:
+            controller.bodyID = controller.maxBodyID - 1
         else:
             controller.bodyID -= 1
-        print("----------")
-        print(controller.bodyID)
     elif key == glfw.KEY_RIGHT:
-        print("KEY RIGHT")
-        if controller.bodyID < 0:
-            controller.bodyID = controller.maxBodyID
-        elif controller.bodyID >= controller.maxBodyID or controller.bodyID==-1:
+        if controller.bodyID >= controller.maxBodyID or controller.bodyID == -1:
             controller.bodyID = 0
+        elif controller.bodyID < 0:
+            controller.bodyID = controller.maxBodyID - 1
         else:
             controller.bodyID += 1
-        print(controller.bodyID)
-        print("----------")
     elif key == glfw.KEY_ESCAPE:
         sys.exit()
 
-    else:
-        print('Unknown key')
-
-def cursor_pos_callback(window, x, y):
-    global controller
-    controller.mousePos = (x, y)
 
 if __name__ == '__main__':
     # Initialize glfw
@@ -70,8 +58,7 @@ if __name__ == '__main__':
         glfw.terminate()
         sys.exit()
     glfw.make_context_current(window)
-    glfw.set_cursor_pos_callback(window, cursor_pos_callback)
-    glfw.set_key_callback(window,on_key)
+    glfw.set_key_callback(window, on_key)
     # Estableciendo color de pantalla
     glClearColor(0.85, 0.85, 0.85, 1.0)
 
@@ -89,7 +76,7 @@ if __name__ == '__main__':
     gpuStar = es.toGPUShape(
         my.createCircle(15, data[0]['Color'][0], data[0]['Color'][1], data[0]['Color'][2], data[0]['Radius']))
     bodyID = 0
-    gpuSelectStar = es.toGPUShape(my.createCircle(15,1,1,1,data[0]['Radius']*1.3))
+    gpuSelectStar = es.toGPUShape(my.createCircle(15, 1, 1, 1, data[0]['Radius'] * 1.3))
     bodyID += 1
 
     for planeta in planetas:
@@ -109,7 +96,7 @@ if __name__ == '__main__':
         planeta['gpuTrail'] = gpuPlanetTrail
         planeta['bodyID'] = bodyID
         bodyID += 1
-        gpuSelect = es.toGPUShape(my.createCircle(15,1,1,1,planeta['Radius']*1.3))
+        gpuSelect = es.toGPUShape(my.createCircle(15, 1, 1, 1, planeta['Radius'] * 1.3))
         planeta['gpuSelect'] = gpuSelect
 
         if planeta['Satellites'] != 'Null':
@@ -124,7 +111,7 @@ if __name__ == '__main__':
 
             # Creando sceneGraph de planeta + satelite
             system = sg.SceneGraphNode('system')
-            system.childs += [sceneSelectPlanet,scenePlanet]
+            system.childs += [sceneSelectPlanet, scenePlanet]
             for satelite in planeta['Satellites']:
                 satelite['bodyID'] = bodyID
                 bodyID += 1
@@ -159,13 +146,12 @@ if __name__ == '__main__':
                 sceneSatellite.childs += [gpuSatellite]
                 satelite['sceneGraph'] = sceneSatellite
 
-                #Creando sceneGraph de satelite select
+                # Creando sceneGraph de satelite select
                 sceneSelectSatellite = sg.SceneGraphNode('selectSatellite')
                 sceneSelectSatellite.childs += [gpuSelect]
                 satelite['selectSceneGraph'] = sceneSelectSatellite
-                system.childs += [sceneSelectSatellite,sceneSatellite]
+                system.childs += [sceneSelectSatellite, sceneSatellite]
             planeta['systemSceneGraph'] = system
-    print(bodyID)
     controller.maxBodyID = bodyID
     t0 = glfw.get_time()
     cam_theta = 0
@@ -208,7 +194,6 @@ if __name__ == '__main__':
                            tr.uniformScale(proportion * 2))
         backgroundPipeline.drawShape(gpuBG)
 
-
         # MOUSE IMPLEMENTATION MIGHT BE ADDED IN THE FUTURE
         # mousePosX = 2 * (controller.mousePos[0] - width / 2) / width
         # mousePosY = 2 * (height / 2 - controller.mousePos[1]) / height
@@ -232,7 +217,6 @@ if __name__ == '__main__':
             planeta['angulo'] += planeta['Velocity'] * dt
             planeta['posx'] = (planeta['Distance'] * np.cos(planeta['angulo'])) + camX
             planeta['posy'] = (planeta['Distance'] * np.sin(planeta['angulo'])) + camY
-
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glUseProgram(bodiesPipeline.shaderProgram)
@@ -267,7 +251,7 @@ if __name__ == '__main__':
                 glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
                                    tr.matmul([tr.translate(planeta['posx'] * zoom, planeta['posy'] * zoom, 0),
                                               tr.uniformScale(zoom)]))
-                if controller.bodyID==planeta['bodyID']:
+                if controller.bodyID == planeta['bodyID']:
                     bodiesPipeline.drawShape(planeta['gpuSelect'])
 
                 bodiesPipeline.drawShape(planeta['GPUShape'])
