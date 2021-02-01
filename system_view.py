@@ -14,7 +14,7 @@ class Controller:
     def __init__(self):
         self.bodyID = -1
         self.maxBodyID = 1
-
+        self.toggleDisplay = False
 
 controller = Controller()
 
@@ -26,7 +26,7 @@ def on_key(window, key, scancode, action, mods):
     global controller
 
     if key == glfw.KEY_ENTER:
-        pass
+        controller.toggleDisplay = not controller.toggleDisplay
 
     elif key == glfw.KEY_LEFT:
         if controller.bodyID >= controller.maxBodyID or controller.bodyID == -1:
@@ -50,8 +50,8 @@ if __name__ == '__main__':
     # Initialize glfw
     if not glfw.init():
         sys.exit()
-    width = 900
-    height = 900
+    width = 800
+    height = 800
     proportion = width / height
     window = glfw.create_window(width, height, 'Sistema planetario 2D', None, None)
     if not window:
@@ -59,15 +59,21 @@ if __name__ == '__main__':
         sys.exit()
     glfw.make_context_current(window)
     glfw.set_key_callback(window, on_key)
+
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     # Estableciendo color de pantalla
     glClearColor(0.85, 0.85, 0.85, 1.0)
 
     # Estableciendo pipelines
-    backgroundPipeline = es.SimpleTextureTransformShaderProgram()
+    texturePipeline = es.SimpleTextureTransformShaderProgram()
     bodiesPipeline = es.SimpleTransformShaderProgram()
-    gpuBG = es.toGPUShape(bs.createTextureQuad('skybox.jpg'), GL_REPEAT, GL_NEAREST)
-    gpuGreenQuad = es.toGPUShape(bs.createColorQuad(0, 1, 0))
 
+    gpuBG = es.toGPUShape(bs.createTextureQuad('skybox.jpg'), GL_REPEAT, GL_NEAREST)
+    gpuInfoTexture = es.toGPUShape(bs.createTextureQuad('planetInfo.jpg'), GL_REPEAT, GL_NEAREST)
+    gpuFrameAnim = es.toGPUShape(bs.createTextureQuad('frameAnim.jpg'), GL_CLAMP_TO_EDGE, GL_NEAREST)
+    gpuBars = es.toGPUShape(bs.createTextureQuad('bars.png'), GL_REPEAT, GL_NEAREST)
+    gpuFigureAnim = es.toGPUShape(bs.createTextureQuad("frameAnim.jpg"), GL_REPEAT, GL_LINEAR)
     # Obteniendo información de bodies.json
     with open('bodies.json') as f:
         data = json.load(f)
@@ -75,11 +81,32 @@ if __name__ == '__main__':
     data[0]['Radius'] *= proportion
     gpuStar = es.toGPUShape(
         my.createCircle(15, data[0]['Color'][0], data[0]['Color'][1], data[0]['Color'][2], data[0]['Radius']))
-    bodyID = 0
-    gpuSelectStar = es.toGPUShape(my.createCircle(15, 1, 1, 1, data[0]['Radius'] * 1.3))
-    bodyID += 1
 
+    gpuSelectStar = es.toGPUShape(my.createCircle(15, 1, 1, 1, data[0]['Radius'] * 1.3))
+
+    sceneText = sg.SceneGraphNode('infoStar')
+    sceneText.childs += [gpuInfoTexture]
+
+    sceneBars = sg.SceneGraphNode('bars')
+    sceneBars.childs += [gpuBars]
+    sceneSystemBars = sg.SceneGraphNode('systemBars')
+    sceneSystemBars.childs += [sceneBars]
+
+    sceneFrameAnim = sg.SceneGraphNode('frameAnim')
+    sceneFrameAnim.childs += [gpuFrameAnim]
+
+    sceneInfo = sg.SceneGraphNode('info')
+    sceneInfo.childs += [sceneText,sceneFrameAnim,sceneSystemBars]
+
+    sceneStar = sg.SceneGraphNode('star')
+    sceneStar.childs += [gpuStar]
+    sceneInfoBodies = sg.SceneGraphNode('infoBodies')
+    sceneInfoBodies.childs += [sceneStar]
+    bodyID = 1
     for planeta in planetas:
+        planeta['bodyID'] = bodyID
+        bodyID += 1
+
         planeta['angulo'] = np.random.uniform(-1, 1) * np.pi * 2
 
         # Almacenando figuras en memoria GPU
@@ -92,13 +119,23 @@ if __name__ == '__main__':
         planeta['posy'] = 0
         gpuPlaneta = es.toGPUShape(my.createCircle(15, r, g, b, planeta['Radius']))
         planeta['GPUShape'] = gpuPlaneta
+
+        #Trail de planeta
         gpuPlanetTrail = es.toGPUShape(my.createTrail(planeta['Distance'], 25))
         planeta['gpuTrail'] = gpuPlanetTrail
-        planeta['bodyID'] = bodyID
-        bodyID += 1
+
+        #Selección de planeta
         gpuSelect = es.toGPUShape(my.createCircle(15, 1, 1, 1, planeta['Radius'] * 1.3))
         planeta['gpuSelect'] = gpuSelect
 
+        sceneInfoPlanet = sg.SceneGraphNode('info')
+        sceneInfoPlanet.childs += [gpuPlaneta]
+        planeta['sceneInfo'] = sceneInfoPlanet
+        sceneInfoBodies.childs += [sceneInfoPlanet]
+        #Info de planeta
+        #sceneInfoPlanet = sg.SceneGraphNode('infoPlaneta')
+        #sceneInfoPlanet.childs += [gpuFigureAnim,gpuPlaneta]
+        #planeta['sceneInfo'] = sceneInfoPlanet
         if planeta['Satellites'] != 'Null':
             # Creando sceneGraph de planeta
             scenePlanet = sg.SceneGraphNode('planet')
@@ -123,6 +160,7 @@ if __name__ == '__main__':
                 b = satelite['Color'][2]
                 satelite['Radius'] *= proportion
                 satelite['Distance'] *= proportion
+
                 gpuSatellite = es.toGPUShape(my.createCircle(15, r, g, b, satelite['Radius']))
                 satelite['GPUShape'] = gpuSatellite
 
@@ -131,6 +169,11 @@ if __name__ == '__main__':
 
                 gpuSelect = es.toGPUShape(my.createCircle(15, 1, 1, 1, satelite['Radius'] * 1.3))
                 satelite['gpuSelect'] = gpuSelect
+
+                #Info de Satelite
+                #sceneInfoSatellite = sg.SceneGraphNode('infoSatellite')
+                #sceneInfoSatellite.childs += [gpuFigureAnim, gpuSatellite]
+                #satelite['sceneInfo'] = sceneInfoSatellite
 
                 # Creando sceneGraph de trail del Satelite
                 satelliteOrbit = sg.SceneGraphNode('satelliteOrbit')
@@ -151,6 +194,12 @@ if __name__ == '__main__':
                 sceneSelectSatellite.childs += [gpuSelect]
                 satelite['selectSceneGraph'] = sceneSelectSatellite
                 system.childs += [sceneSelectSatellite, sceneSatellite]
+
+                sceneInfoSatellite = sg.SceneGraphNode('infoSat')
+                sceneInfoSatellite.childs += [gpuSatellite]
+                satelite['sceneInfo'] = sceneInfoSatellite
+                sceneInfoBodies.childs += [sceneInfoSatellite]
+                
             planeta['systemSceneGraph'] = system
     controller.maxBodyID = bodyID
     t0 = glfw.get_time()
@@ -158,6 +207,9 @@ if __name__ == '__main__':
     camX = 0
     camY = 0
     zoom = 1
+    i=0.05
+    barsY = (1/proportion)*0.5
+
     while not glfw.window_should_close(window):
         glfw.poll_events()  # Se buscan eventos de entrada, mouse, teclado
 
@@ -189,27 +241,21 @@ if __name__ == '__main__':
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         # Textura de fondo
-        glUseProgram(backgroundPipeline.shaderProgram)
-        glUniformMatrix4fv(glGetUniformLocation(backgroundPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
+        glUseProgram(texturePipeline.shaderProgram)
+        glUniformMatrix4fv(glGetUniformLocation(texturePipeline.shaderProgram, 'transform'), 1, GL_TRUE,
                            tr.uniformScale(proportion * 2))
-        backgroundPipeline.drawShape(gpuBG)
-
-        # MOUSE IMPLEMENTATION MIGHT BE ADDED IN THE FUTURE
-        # mousePosX = 2 * (controller.mousePos[0] - width / 2) / width
-        # mousePosY = 2 * (height / 2 - controller.mousePos[1]) / height
-        #
-        # glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, "transform"), 1, GL_TRUE, np.matmul(
-        #     tr.translate(mousePosX, mousePosY, 0),
-        #     tr.uniformScale(0.3)
-        # ))
-        # bodiesPipeline.drawShape(gpuGreenQuad)
+        texturePipeline.drawShape(gpuBG)
 
         glUseProgram(bodiesPipeline.shaderProgram)
-
         glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
                            tr.matmul([tr.translate(camX * zoom, camY * zoom, 0), tr.uniformScale(zoom)]))
         if controller.bodyID == 0:
             bodiesPipeline.drawShape(gpuSelectStar)
+        if controller.toggleDisplay and controller.bodyID==0:
+            sceneStar.transform = tr.identity()
+        else:
+            sceneStar.transform = tr.uniformScale(0)
+
         bodiesPipeline.drawShape(gpuStar)
 
         for planeta in planetas:
@@ -236,6 +282,10 @@ if __name__ == '__main__':
                         satelite['selectSceneGraph'].transform = tr.translate(satelite['posx'], satelite['posy'], 0)
                     else:
                         satelite['selectSceneGraph'].transform = tr.uniformScale(0)
+                    if controller.toggleDisplay and controller.bodyID == satelite['bodyID']:
+                        satelite['sceneInfo'].transform = tr.identity()
+                    else:
+                        satelite['sceneInfo'].transform = tr.uniformScale(0)
 
                     satelite['sceneGraph'].transform = tr.translate(satelite['posx'], satelite['posy'], 0)
                 planeta['systemSceneGraph'].transform = tr.matmul(
@@ -244,8 +294,13 @@ if __name__ == '__main__':
                     planeta['selectSceneGraph'].transform = tr.identity()
                 else:
                     planeta['selectSceneGraph'].transform = tr.uniformScale(0)
+                if controller.toggleDisplay and controller.bodyID == planeta['bodyID']:
+                    planeta['sceneInfo'].transform = tr.identity()
+                else:
+                    planeta['sceneInfo'].transform = tr.uniformScale(0)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                 sg.drawSceneGraphNode(planeta['systemSceneGraph'], bodiesPipeline, 'transform')
+
             else:
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                 glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
@@ -253,8 +308,34 @@ if __name__ == '__main__':
                                               tr.uniformScale(zoom)]))
                 if controller.bodyID == planeta['bodyID']:
                     bodiesPipeline.drawShape(planeta['gpuSelect'])
+                if controller.toggleDisplay and controller.bodyID == planeta['bodyID']:
+                    planeta['sceneInfo'].transform = tr.identity()
+                else:
+                    planeta['sceneInfo'].transform = tr.uniformScale(0)
 
                 bodiesPipeline.drawShape(planeta['GPUShape'])
+        if controller.toggleDisplay and controller.bodyID!=-1 and controller.bodyID!=controller.maxBodyID:
+            if i>=0.3*proportion:
+                i=-i
+            i+=0.005
+            glUseProgram(texturePipeline.shaderProgram)
+            sceneBars.transform = tr.translate(proportion*0.5,0.5,0)
+            sceneSystemBars.transform =tr.matmul([tr.translate(proportion*0.55,proportion*0.3,0),tr.scale(proportion*0.25,abs(i),0)])
+            sceneFrameAnim.transform = tr.matmul( [tr.translate(0.5 * proportion, 0.35 * proportion, 0),tr.uniformScale(proportion/1.5)])
+            sceneText.transform = tr.matmul([tr.translate(0.5*proportion,-0.35*proportion,0),tr.uniformScale(proportion/1.5)])
+            sg.drawSceneGraphNode(sceneInfo, texturePipeline, 'transform')
+
+            glUseProgram(bodiesPipeline.shaderProgram)
+            sceneInfoBodies.transform = tr.matmul([tr.translate(proportion*0.35,proportion*0.4 , 0),
+                                          tr.uniformScale(proportion*1.01)])
+            sg.drawSceneGraphNode(sceneInfoBodies,bodiesPipeline,'transform')
+        # if controller.bodyID == 0:
+        #     glUseProgram(bodiesPipeline.shaderProgram)
+        #     glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
+        #                        tr.matmul([tr.translate(proportion*0.35,proportion*0.4 , 0),
+        #                                   tr.uniformScale(proportion*1.01)]))
+        #     bodiesPipeline.drawShape(gpuStar)
+
         glfw.swap_buffers(window)
 
     glfw.terminate()
