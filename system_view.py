@@ -1,3 +1,4 @@
+# Autor: Felipe Torralba
 import glfw
 from OpenGL.GL import *
 import sys
@@ -20,7 +21,7 @@ class Controller:
 controller = Controller()
 
 
-def on_key(window, key, scancode, action, mods):
+def on_key(window, key, scancode, action, mods): # noqa
     if action != glfw.PRESS:
         return
 
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     sceneFrameAnim.childs += [gpuFrameAnim]
 
     sceneInfo = sg.SceneGraphNode('info')
-    sceneInfo.childs += [sceneText,sceneFrameAnim,sceneSystemBars]
+    sceneInfo.childs += [sceneText, sceneFrameAnim, sceneSystemBars]
 
     sceneStar = sg.SceneGraphNode('star')
     sceneStar.childs += [gpuStar]
@@ -121,11 +122,11 @@ if __name__ == '__main__':
         gpuPlaneta = es.toGPUShape(my.createCircle(15, r, g, b, planeta['Radius']))
         planeta['GPUShape'] = gpuPlaneta
 
-        #Trail de planeta
+        # Trail de planeta
         gpuPlanetTrail = es.toGPUShape(my.createTrail(planeta['Distance'], 25))
         planeta['gpuTrail'] = gpuPlanetTrail
 
-        #Selección de planeta
+        # Selección de planeta
         gpuSelect = es.toGPUShape(my.createCircle(15, 1, 1, 1, planeta['Radius'] * 1.3))
         planeta['gpuSelect'] = gpuSelect
 
@@ -133,10 +134,10 @@ if __name__ == '__main__':
         sceneInfoPlanet.childs += [gpuPlaneta]
         planeta['sceneInfo'] = sceneInfoPlanet
         sceneInfoBodies.childs += [sceneInfoPlanet]
-        #Info de planeta
-        #sceneInfoPlanet = sg.SceneGraphNode('infoPlaneta')
-        #sceneInfoPlanet.childs += [gpuFigureAnim,gpuPlaneta]
-        #planeta['sceneInfo'] = sceneInfoPlanet
+        # Info de planeta
+        # sceneInfoPlanet = sg.SceneGraphNode('infoPlaneta')
+        # sceneInfoPlanet.childs += [gpuFigureAnim,gpuPlaneta]
+        # planeta['sceneInfo'] = sceneInfoPlanet
         if planeta['Satellites'] != 'Null':
             # Creando sceneGraph de planeta
             scenePlanet = sg.SceneGraphNode('planet')
@@ -171,11 +172,6 @@ if __name__ == '__main__':
                 gpuSelect = es.toGPUShape(my.createCircle(15, 1, 1, 1, satelite['Radius'] * 1.3))
                 satelite['gpuSelect'] = gpuSelect
 
-                #Info de Satelite
-                #sceneInfoSatellite = sg.SceneGraphNode('infoSatellite')
-                #sceneInfoSatellite.childs += [gpuFigureAnim, gpuSatellite]
-                #satelite['sceneInfo'] = sceneInfoSatellite
-
                 # Creando sceneGraph de trail del Satelite
                 satelliteOrbit = sg.SceneGraphNode('satelliteOrbit')
                 satelliteOrbit.childs += [gpuSatelliteTrail]
@@ -200,7 +196,7 @@ if __name__ == '__main__':
                 sceneInfoSatellite.childs += [gpuSatellite]
                 satelite['sceneInfo'] = sceneInfoSatellite
                 sceneInfoBodies.childs += [sceneInfoSatellite]
-                
+
             planeta['systemSceneGraph'] = system
     controller.maxBodyID = bodyID
     t0 = glfw.get_time()
@@ -208,8 +204,8 @@ if __name__ == '__main__':
     camX = 0
     camY = 0
     zoom = 1
-    i=0.05
-    barsY = (1/proportion)*0.5
+    i = 0.05
+    barsY = (1 / proportion) * 0.5
 
     while not glfw.window_should_close(window):
         glfw.poll_events()  # Se buscan eventos de entrada, mouse, teclado
@@ -252,7 +248,7 @@ if __name__ == '__main__':
                            tr.matmul([tr.translate(camX * zoom, camY * zoom, 0), tr.uniformScale(zoom)]))
         if controller.bodyID == 0:
             bodiesPipeline.drawShape(gpuSelectStar)
-        if controller.toggleDisplay and controller.bodyID==0:
+        if controller.toggleDisplay and controller.bodyID == 0:
             sceneStar.transform = tr.identity()
         else:
             sceneStar.transform = tr.uniformScale(0)
@@ -315,21 +311,24 @@ if __name__ == '__main__':
                     planeta['sceneInfo'].transform = tr.uniformScale(0)
 
                 bodiesPipeline.drawShape(planeta['GPUShape'])
-        if controller.toggleDisplay and controller.bodyID!=-1 and controller.bodyID!=controller.maxBodyID:
-            if i>=0.3*proportion:
-                i=-i
-            i+=0.005
+        if controller.toggleDisplay and controller.bodyID != -1 and controller.bodyID != controller.maxBodyID:
+            if i >= 0.3 * proportion:
+                i = -i
+            i += 0.005
             glUseProgram(texturePipeline.shaderProgram)
-            sceneBars.transform = tr.translate(proportion*0.5,0.5,0)
-            sceneSystemBars.transform =tr.matmul([tr.translate(proportion*0.55,proportion*0.3,0),tr.scale(proportion*0.25,abs(i),0)])
-            sceneFrameAnim.transform = tr.matmul( [tr.translate(0.5 * proportion, 0.35 * proportion, 0),tr.uniformScale(proportion/1.5)])
-            sceneText.transform = tr.matmul([tr.translate(0.5*proportion,-0.35*proportion,0),tr.uniformScale(proportion/1.5)])
+            sceneBars.transform = tr.translate(proportion * 0.5, 0.5, 0)
+            sceneSystemBars.transform = tr.matmul(
+                [tr.translate(proportion * 0.55, proportion * 0.3, 0), tr.scale(proportion * 0.25, abs(i), 0)])
+            sceneFrameAnim.transform = tr.matmul(
+                [tr.translate(0.5 * proportion, 0.35 * proportion, 0), tr.uniformScale(proportion / 1.5)])
+            sceneText.transform = tr.matmul(
+                [tr.translate(0.5 * proportion, -0.35 * proportion, 0), tr.uniformScale(proportion / 1.5)])
             sg.drawSceneGraphNode(sceneInfo, texturePipeline, 'transform')
 
             glUseProgram(bodiesPipeline.shaderProgram)
-            sceneInfoBodies.transform = tr.matmul([tr.translate(proportion*0.35,proportion*0.4 , 0),
-                                          tr.uniformScale(proportion*1.01)])
-            sg.drawSceneGraphNode(sceneInfoBodies,bodiesPipeline,'transform')
+            sceneInfoBodies.transform = tr.matmul([tr.translate(proportion * 0.35, proportion * 0.4, 0),
+                                                   tr.uniformScale(proportion * 1.01)])
+            sg.drawSceneGraphNode(sceneInfoBodies, bodiesPipeline, 'transform')
         # if controller.bodyID == 0:
         #     glUseProgram(bodiesPipeline.shaderProgram)
         #     glUniformMatrix4fv(glGetUniformLocation(bodiesPipeline.shaderProgram, 'transform'), 1, GL_TRUE,
